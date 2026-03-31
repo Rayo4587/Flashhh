@@ -1,48 +1,91 @@
 #!/bin/bash
 
-# Function to check command existence
-check_command() {
-    command -v "$1" >/dev/null 2>&1 || {
-        echo >&2 "Error: $1 is not installed. Please install it and try again."
+# Comprehensive Production-Ready Automation Script
+
+# Color codes for progress tracking
+SUCCESS="\033[0;32m"  # Green
+WARNING="\033[0;33m"  # Yellow
+ERROR="\033[0;31m"    # Red
+NC="\033[0m"          # No Color
+
+# Function to check Node.js installation
+check_node() {
+    if ! command -v node &> /dev/null; then
+        echo -e "${ERROR}Node.js is not installed. Please install it before running the script.${NC}"
         exit 1
-    }
+    else
+        echo -e "${SUCCESS}Node.js is installed.${NC}"
+    fi
 }
 
-# Install dependencies
+# Function to install FFmpeg
+install_ffmpeg() {
+    echo -e "${WARNING}Installing FFmpeg...${NC}"
+    if [[ $(uname) == "Darwin" ]]; then
+        brew install ffmpeg
+    elif [[ $(uname) == "Linux" ]]; then
+        sudo apt-get install ffmpeg -y
+    else
+        echo -e "${ERROR}Unsupported operating system.${NC}"
+        exit 1
+    fi
+    echo -e "${SUCCESS}FFmpeg installed successfully.${NC}"
+}
+
+# Function to check for Google Chrome installation
+check_chrome() {
+    if ! command -v google-chrome &> /dev/null; then
+        echo -e "${ERROR}Google Chrome is not installed. Please install it before running the script.${NC}"
+        exit 1
+    else
+        echo -e "${SUCCESS}Google Chrome is installed.${NC}"
+    fi
+}
+
+# Function to install npm dependencies
 install_dependencies() {
-    echo "Installing dependencies..."
-    sudo apt update
-    sudo apt install -y ffmpeg google-chrome-stable
+    echo -e "${WARNING}Installing npm dependencies...${NC}"
+    npm install
+    echo -e "${SUCCESS}npm dependencies installed successfully.${NC}"
 }
 
-# Verify FFmpeg
-verify_ffmpeg() {
-    echo "Verifying FFmpeg..."
-    check_command ffmpeg
-    ffmpeg -version
+# Function to validate video source
+validate_video_source() {
+    if [[ ! -f "video_source.mp4" ]]; then
+        echo -e "${ERROR}Video source not found! Please check the file path.${NC}"
+        exit 1
+    else
+        echo -e "${SUCCESS}Video source validated.${NC}"
+    fi
 }
 
-# Verify Google Chrome
-verify_chrome() {
-    echo "Verifying Google Chrome..."
-    check_command google-chrome
-    google-chrome --version
+# Function for high-quality rendering
+render_video() {
+    echo -e "${WARNING}Rendering video...${NC}"
+    ffmpeg -i video_source.mp4 -c:v libx264 -preset slow -crf 18 output_video.mp4
+    if [[ $? -ne 0 ]]; then
+        echo -e "${ERROR}Rendering failed! Please check the logs.${NC}"
+        exit 1
+    else
+        echo -e "${SUCCESS}Video rendered successfully. Output: output_video.mp4${NC}"
+    fi
 }
 
-# Run the video rendering process
-run_rendering() {
-    echo "Starting video rendering process..."
-    # Placeholder for the actual rendering command
-    # ./render_video.sh
-
-    # Simulating rendering process with a sleep command
-echo "Simulating video render..."
-sleep 5 # Simulate time taken to render
-    echo "Video rendering completed successfully!"
+# Function to verify output
+verify_output() {
+    if [[ -f "output_video.mp4" ]]; then
+        echo -e "${SUCCESS}Output video verified successfully.${NC}"
+    else
+        echo -e "${ERROR}Output video not found!${NC}"
+        exit 1
+    fi
 }
 
 # Main script execution
+check_node
+install_ffmpeg
+check_chrome
 install_dependencies
-verify_ffmpeg
-verify_chrome
-run_rendering
+validate_video_source
+render_video
+verify_output
