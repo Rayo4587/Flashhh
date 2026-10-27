@@ -26,7 +26,7 @@ Tecnología: Next.js 15 + Supabase (base de datos y login con Google) + Vercel (
 ### 2. Login con Google
 1. En https://console.cloud.google.com crea un proyecto. Configura la **pantalla de consentimiento OAuth** (tipo *Externo*, nombre "ATC · Wellness at the Club", logo y dominio wellnessattheclub.com) y publícala.
 2. En **Credenciales → Crear credenciales → ID de cliente OAuth → Aplicación web**:
-   - *URI de redireccionamiento autorizado*: `https://TU-PROYECTO.supabase.co/auth/v1/callback`
+   - *URI de redireccionamiento autorizado*: `https://nsoveeyxnlfejgqiokhq.supabase.co/auth/v1/callback`
 3. Copia el *Client ID* y el *Client Secret*.
 4. En Supabase → **Authentication → Sign In / Providers → Google**: actívalo y pega ambos valores.
 5. En Supabase → **Authentication → URL Configuration**:
