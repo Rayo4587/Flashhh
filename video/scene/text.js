@@ -37,6 +37,29 @@ export function textPlane(lines, opts = {}, height = 1) {
   return mesh;
 }
 
+// Palabra como letras sueltas (para animarlas una a una). Devuelve un grupo; cada hijo es una letra
+// con userData.x0 = posición de reposo, centrado en el origen. height = altura de la caja de letra.
+export function letterGroup(word, opts = {}, height = 1) {
+  const { font = 'RocBlackObl', size = 300 } = opts;
+  const ctx = document.createElement('canvas').getContext('2d');
+  ctx.font = `${size}px ${font}`;
+  const pad = 40;
+  const unit = height / (size + pad * 2 + size * 0.15);
+  const advances = [...word].map((ch) => ctx.measureText(ch).width * unit);
+  const total = advances.reduce((a, b) => a + b, 0);
+  const g = new THREE.Group();
+  let x = -total / 2;
+  [...word].forEach((ch, i) => {
+    const p = textPlane([ch], { ...opts, padding: pad }, height);
+    p.userData.x0 = x + advances[i] / 2;
+    p.position.x = p.userData.x0;
+    g.add(p);
+    x += advances[i];
+  });
+  g.userData.width = total;
+  return g;
+}
+
 // Fila de palabra repetida (estilo Nike) que se desplaza horizontalmente.
 export function wordBand(word, opts = {}, height = 1, reps = 8) {
   const line = Array(reps).fill(word).join('  ');

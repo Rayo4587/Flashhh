@@ -242,17 +242,25 @@ place(sfx, impact(1.5), 3.0, 0.7)
 place(sfx, impact(1.2), 19.5, 0.6)
 
 # whooshes en cortes
-cuts = sorted(set([s["start"] for s in TL["scenes"]][1:] + [3 + i for i in range(1, len(TL["montage"]))]))
+cuts = [s["start"] for s in TL["scenes"]][1:]
 for c in cuts:
     place(sfx, whoosh(0.45), c - 0.3, 0.55)
 
 # golpes en las secciones de boxeo (mismos tiempos que la animación)
-box_windows = [(4, 5), (7, 8), (9, 11)]
+box_windows = [(9, 11)]  # escena "golpe"
 for bar in range(0, 40, 2):
     for o in (0, 0.5, 1.0, 1.25, 1.5):
         pt = bar + o + 0.09
         if any(a <= pt < b for a, b in box_windows):
             place(sfx, punch_sfx(), pt, 0.8)
+
+# pasos: cada letra de "PASO." cae con un golpe seco (ver scenePaso)
+for i in range(5):
+    n = T(0.18)
+    tt = np.arange(n) / SR
+    step = np.sin(2 * np.pi * (70 * np.exp(-tt * 25) + 45) * tt) * env_exp(n, 0.04)
+    step += hp(rng.standard_normal(n), 3000) * env_exp(n, 0.006) * 0.3
+    place(sfx, step, 11.0 + 0.08 + i * 0.3 + 0.18, 0.7)
 
 # ---------- locución ----------
 voice = np.zeros(N)
@@ -278,8 +286,9 @@ sfx /= np.max(np.abs(sfx)) + 1e-9
 delay = T(0.012)
 mL = music_bus
 mR = np.concatenate([np.zeros(delay), music_bus[:-delay]]) * 0.95 + music_bus * 0.05
-mix_L = 0.55 * mL + 0.45 * sfx + 0.95 * voice
-mix_R = 0.55 * mR + 0.45 * sfx + 0.95 * voice
+# efectos ~8 dB por debajo de la voz en los picos (regla de mezcla de MOTION PRO)
+mix_L = 0.55 * mL + 0.38 * sfx + 0.95 * voice
+mix_R = 0.55 * mR + 0.38 * sfx + 0.95 * voice
 mix = np.stack([mix_L, mix_R], axis=1)
 # fundido final
 fade = np.ones(N)

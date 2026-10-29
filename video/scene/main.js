@@ -1,4 +1,4 @@
-// AT THE CLUB — video de presentación de marca (motion graphics 3D).
+// AT THE CLUB — video de presentación de marca (tipografía cinética 3D, blanco y negro).
 // window.renderFrame(t) dibuja el cuadro del segundo t de forma determinista.
 import * as THREE from 'three';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
@@ -7,9 +7,7 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { Figure, runPose, boxPose, barrePose } from './figure.js';
-import { textPlane, wordBand, imagePlane } from './text.js';
+import { textPlane, wordBand, letterGroup, imagePlane } from './text.js';
 
 const TL = await (await fetch('/video/timeline.json')).json();
 const fams = ['RocBlackObl', 'RocBlack', 'RocLightObl', 'RocMedObl', 'BioBold', 'BioIt', 'BioLight'];
@@ -36,8 +34,6 @@ renderer.setPixelRatio(1);
 renderer.setSize(W, H);
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 0.82;
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 document.getElementById('stage').prepend(renderer.domElement);
 
 const scene = new THREE.Scene();
@@ -45,33 +41,7 @@ scene.background = new THREE.Color(0x000000);
 scene.fog = new THREE.Fog(0x000000, 7, 26);
 const camera = new THREE.PerspectiveCamera(40, W / H, 0.05, 200);
 
-const pmrem = new THREE.PMREMGenerator(renderer);
-scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-
-scene.add(new THREE.HemisphereLight(0xffffff, 0x0a0a0a, 0.25));
-const key = new THREE.DirectionalLight(0xffffff, 1.25);
-key.position.set(3, 7, 4);
-key.castShadow = true;
-key.shadow.mapSize.set(1024, 1024);
-Object.assign(key.shadow.camera, { left: -4, right: 4, top: 4, bottom: -4, near: 0.5, far: 25 });
-key.shadow.radius = 4;
-scene.add(key);
-const rimA = new THREE.DirectionalLight(0xffffff, 1.9); rimA.position.set(-5, 3, -5); scene.add(rimA);
-const rimB = new THREE.DirectionalLight(0xffffff, 1.4); rimB.position.set(5, 2.5, -4); scene.add(rimB);
-
-const bodyMat = new THREE.MeshStandardMaterial({ color: 0xcfcfcf, roughness: 0.42, metalness: 0.1, envMapIntensity: 0.5 });
-const floorMat = new THREE.MeshStandardMaterial({ color: 0x0b0b0b, roughness: 0.72, metalness: 0.15, envMapIntensity: 0.15 });
 const lineMat = new THREE.MeshBasicMaterial({ color: WHITE, toneMapped: false, fog: false });
-
-const floor = new THREE.Mesh(new THREE.PlaneGeometry(80, 80), floorMat);
-floor.rotation.x = -Math.PI / 2;
-floor.receiveShadow = true;
-scene.add(floor);
-
-const fRun = new Figure(bodyMat);
-const fBox = new Figure(bodyMat, { gloves: true });
-const fBarre = new Figure(bodyMat);
-for (const f of [fRun, fBox, fBarre]) scene.add(f.root);
 
 const groups = {};
 const mkGroup = (id) => { const g = new THREE.Group(); groups[id] = g; scene.add(g); return g; };
@@ -89,7 +59,7 @@ function bandStack(word, rows = 5, h = 0.9) {
     b.userData.dir = i % 2 ? 1 : -1;
     b.userData.speed = 0.35 + 0.15 * (i % 3);
     noFog(b);
-    b.traverse((m) => { if (m.material) m.material.opacity = outline ? 0.55 : 0.16; });
+    b.traverse((m) => { if (m.material) m.material.opacity = outline ? 0.32 : 0.1; });
     g.add(b);
   }
   return g;
@@ -100,13 +70,6 @@ function updateBands(g, t, speedMul = 1) {
     b.position.x = (((t * b.userData.speed * speedMul * b.userData.dir) % w) + w) % w - w / 2;
   }
 }
-function faceCameraBehind(obj, target, dist) {
-  const dir = target.clone().sub(camera.position).setY(0).normalize();
-  obj.position.copy(target).addScaledVector(dir, dist);
-  obj.position.y = target.y + 0.3;
-  obj.lookAt(camera.position.x, obj.position.y, camera.position.z);
-}
-
 // ================= INTRO =================
 const gIntro = mkGroup('intro');
 const pill = await imagePlane('/brand/logos/png/atc-pill-blanco.png', 0.62);
@@ -130,7 +93,6 @@ for (let i = 0; i < 14; i++) {
 }
 
 function sceneIntro(lt) {
-  floor.visible = false;
   camera.position.set(0.05 * noise1(lt * 0.3), 0, lerp(5.2, 4.3, easeInOut(lt / 3)));
   camera.lookAt(0, 0, 0);
   camera.rotation.z = lerp(0.02, -0.03, lt / 3);
@@ -156,205 +118,236 @@ function sceneIntro(lt) {
   });
 }
 
-// ================= RUN =================
-const gRun = mkGroup('run');
-const dashes = [];
-for (let lane = -2; lane <= 2; lane++) {
-  const line = new THREE.Mesh(new THREE.PlaneGeometry(0.03, 120), lineMat);
-  line.rotation.x = -Math.PI / 2; line.position.set(lane * 1.2 + 0.6, 0.002, -30);
-  gRun.add(line);
-}
-for (let i = 0; i < 24; i++) {
-  const d = new THREE.Mesh(new THREE.PlaneGeometry(0.8, 0.05), lineMat);
-  d.rotation.x = -Math.PI / 2;
-  gRun.add(d); dashes.push(d);
-}
-const streaks = [];
-for (let i = 0; i < 70; i++) {
-  const s = new THREE.Mesh(new THREE.BoxGeometry(0.008, 0.008, 1.2 + hash(i) * 2), lineMat);
-  gRun.add(s); streaks.push(s);
-}
-const runBands = bandStack('RUN', 6, 1.0);
-scene.add(runBands);
+// ================= TIPOGRAFÍA (sin personas) =================
+// Ancho visible del cuadro a una distancia d de la cámara (formato vertical 9:16, fov 40).
+const frameW = (d) => d * 2 * Math.tan(THREE.MathUtils.degToRad(20)) * (W / H);
+const fitW = (m, w) => { m.scale.setScalar(w / m.geometry.parameters.width); return m; };
+const word = (lines, opts, w) => { const m = fitW(textPlane(lines, { fill: '#f2f2f2', ...opts }, 1), w); noFog(m); return m; };
 
-function sceneRun(lt, t, variant) {
-  fRun.root.visible = true;
-  fRun.root.position.set(0, 0, 0);
-  fRun.root.rotation.y = 0;
-  fRun.setPose(runPose(t));
-  const speed = 9;
-  dashes.forEach((d, i) => {
-    const lane = (i % 4) * 1.2 - 1.8;
-    d.position.set(lane + 0.6, 0.003, (((i * 3.3 + t * speed) % 40) + 40) % 40 - 30);
-    d.rotation.z = Math.PI / 2;
-  });
-  streaks.forEach((s, i) => {
-    s.position.set((hash(i) - 0.5) * 8, 0.1 + hash(i + 50) * 3.5, ((hash(i + 99) * 30 + t * speed * 2.2) % 30) - 22);
-  });
-  let target;
-  if (variant === 0) { // travelling lateral bajo
-    camera.position.set(3.4 - lt * 0.25, 0.6, 1.1 + lt * 0.2);
-    target = V(0, 1.0, 0);
-  } else if (variant === 1) { // frontal, contrapicado
-    camera.position.set(0.6 * Math.sin(lt * 0.8), 0.35, lerp(3.4, 2.8, lt / 2));
-    target = V(0, 1.15, 0);
-  } else { // pies: "cada paso"
-    camera.position.set(2.3 - lt * 0.25, 0.22, 1.3 - lt * 0.1);
-    target = V(0, 0.55, 0);
+// Pista de atletismo en perspectiva (carriles + marcas que pasan).
+function makeTrack(g, lanes = 6, spacing = 0.55) {
+  const marks = [];
+  for (let i = 0; i <= lanes; i++) {
+    const x = (i - lanes / 2) * spacing;
+    const l = new THREE.Mesh(new THREE.PlaneGeometry(0.018, 200), lineMat);
+    l.rotation.x = -Math.PI / 2; l.position.set(x, 0, -95); g.add(l);
   }
-  camera.position.y += 0.025 * Math.abs(Math.sin(t * Math.PI * 2.9));
-  camera.lookAt(target);
-  faceCameraBehind(runBands, V(0, 1.2, 0), 6);
-  updateBands(runBands, t, 2.2);
+  for (let i = 0; i < 30; i++) {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(lanes * spacing, 0.012), lineMat);
+    m.rotation.x = -Math.PI / 2; g.add(m); marks.push(m);
+  }
+  return (travel) => marks.forEach((m, i) => { m.position.set(0, 0.001, ((i * 2.2 + travel) % 66) - 60); });
 }
 
-// ================= BOX =================
-const gBox = mkGroup('box');
-const ringFloor = new THREE.Mesh(new THREE.RingGeometry(1.25, 1.28, 96), lineMat);
-ringFloor.rotation.x = -Math.PI / 2; ringFloor.position.y = 0.003; gBox.add(ringFloor);
-const ringFloor2 = new THREE.Mesh(new THREE.RingGeometry(1.9, 1.91, 96), lineMat);
-ringFloor2.rotation.x = -Math.PI / 2; ringFloor2.position.y = 0.003; gBox.add(ringFloor2);
+// ---- 1. NO POR LLEGAR PRIMERO ----
+const gPrimero = mkGroup('primero');
+const trackA = makeTrack(gPrimero);
+const noPor = word(['NO POR LLEGAR'], { font: 'BioBold', size: 120, tracking: 10 }, 1.0);
+const primero = word(['PRIMERO.'], { font: 'RocBlackObl', size: 300 }, 1.55);
+const primeroGhost = word(['PRIMERO.'], { font: 'RocBlackObl', size: 300, fill: null, stroke: '#f2f2f2', strokeWidth: 5 }, 1.55);
+const strike = new THREE.Mesh(new THREE.PlaneGeometry(1, 0.045), lineMat);
+[noPor, primero, primeroGhost, strike].forEach((m) => gPrimero.add(m));
+
+function scenePrimero(lt) {
+  const travel = lt * 7;
+  trackA(travel);
+  camera.position.set(0, 0.55 + 0.01 * Math.sin(lt * 9), 3.2 - lt * 0.35);
+  camera.lookAt(0, 0.75, -4);
+  const z = -1.2;
+  const a = easeOut(lt / 0.35);
+  noPor.position.set(0, 1.55 - 0.05 * (1 - a), z);
+  noPor.material.opacity = a;
+  const b = easeOutBack((lt - 0.5) / 0.4);
+  primero.position.set(0, 1.12, z);
+  fitW(primero, 1.55 * lerp(1.6, 1, b));
+  primero.material.opacity = smooth((lt - 0.5) / 0.15);
+  // tachado: "no se trata de llegar primero"
+  const s = easeInOut((lt - 1.35) / 0.3);
+  strike.visible = s > 0;
+  strike.scale.x = 1.7 * s;
+  strike.position.set(-0.85 + 0.85 * s, 1.13, z + 0.01);
+  const fadeOut = smooth((lt - 1.6) / 0.4);
+  primero.material.opacity *= 1 - fadeOut;
+  primeroGhost.position.copy(primero.position);
+  primeroGhost.scale.copy(primero.scale);
+  primeroGhost.material.opacity = fadeOut * 0.8;
+  noPor.material.opacity *= 1 - fadeOut * 0.6;
+}
+
+// ---- 2. ...SINO POR TODO LO QUE DESPIERTAS EN EL CAMINO (pila acumulada) ----
+const gStack = mkGroup('despiertas');
+const STACK = ['FUERZA.', 'CALMA.', 'ENERGÍA.', 'DISCIPLINA.', 'RITMO.', 'CONFIANZA.', 'COMUNIDAD.'];
+const stackWords = STACK.map((w) => { const m = word([w], { font: 'RocBlackObl', size: 260 }, 1); gStack.add(m); return m; });
+const stackStep = 0.42;
+function sceneDespiertas(lt) {
+  camera.position.set(0.04 * Math.sin(lt * 0.6), 0, lerp(4.4, 4.0, easeInOut(lt / 3.75)));
+  camera.lookAt(0, 0, 0);
+  const n = STACK.length;
+  // cada palabra entra abajo en grande; las anteriores suben, se achican y se apagan
+  let y = -0.55;
+  for (let i = n - 1; i >= 0; i--) {
+    const m = stackWords[i];
+    const tIn = 0.15 + i * stackStep;
+    const shown = lt >= tIn;
+    m.visible = shown;
+    if (!shown) continue;
+    let level = 0;
+    for (let j = i + 1; j < n; j++) level += easeOut((lt - (0.15 + j * stackStep)) / 0.25);
+    const w = 1.45 * Math.pow(0.74, level);
+    const pop = easeOutBack((lt - tIn) / 0.3);
+    fitW(m, w * lerp(1.25, 1, pop));
+    const h = m.geometry.parameters.height * m.scale.y;
+    m.position.set(0, y + h / 2, 0);
+    y += h * 0.78;
+    m.material.opacity = smooth((lt - tIn) / 0.12) * lerp(1, 0.28, clamp01(level / 2));
+  }
+  gStack.position.y = -y / 2 + 0.25;
+}
+
+// ---- 3. CADA GOLPE ----
+const gGolpe = mkGroup('golpe');
+const golpeBands = bandStack('BOX', 9, 0.42);
+gGolpe.add(golpeBands);
+const golpe = letterGroup('GOLPE.', { font: 'RocBlackObl', size: 300, fill: '#f2f2f2' }, 0.62);
+noFog(golpe); gGolpe.add(golpe);
 const shock = [];
 for (let i = 0; i < 3; i++) {
-  const m = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.006, 8, 64),
-    new THREE.MeshBasicMaterial({ color: WHITE, transparent: true, toneMapped: false }));
-  gBox.add(m); shock.push(m);
+  const m = new THREE.Mesh(new THREE.RingGeometry(0.6, 0.615, 128),
+    new THREE.MeshBasicMaterial({ color: WHITE, transparent: true, toneMapped: false, fog: false }));
+  gGolpe.add(m); shock.push(m);
 }
-const boxBands = bandStack('BOX', 6, 1.0);
-scene.add(boxBands);
-let boxImpact = 0;
-
-// tiempos de golpe del combo (ver boxPose): pico ~0.09 s después del inicio
+let impact = 0;
+// golpes del combo (mismos tiempos que los efectos de sonido)
 const punchTimes = [];
-for (let bar = 0; bar < 40; bar += 2) for (const o of [0, 0.5, 1.0, 1.25, 1.5]) punchTimes.push(bar + o + 0.09);
-
-function sceneBox(lt, t, variant) {
-  fBox.root.visible = true;
-  fBox.root.position.set(0, 0, 0);
-  fBox.root.rotation.y = -0.55;
-  const p = boxPose(t);
-  fBox.setPose(p);
-  fBox.plantFeet();
-  // ondas de impacto
-  const past = punchTimes.filter((pt) => pt <= t).slice(-3);
-  boxImpact = 0;
+for (let bar = 8; bar < 12; bar += 2) for (const o of [0, 0.5, 1.0, 1.25, 1.5]) punchTimes.push(bar + o + 0.09);
+function sceneGolpe(lt, t) {
+  const past = punchTimes.filter((p) => p <= t);
+  const last = past[past.length - 1] ?? -10;
+  const age = t - last;
+  impact = Math.max(0, 1 - age / 0.14);
+  camera.position.set(impact * 0.04 * noise1(t * 11), impact * 0.04 * noise1(t * 7 + 2), 3.6 - lt * 0.15);
+  camera.lookAt(0, 0, 0);
+  golpeBands.position.set(0, 0, -1.6);
+  golpeBands.scale.setScalar(1);
+  updateBands(golpeBands, t, 0.9 + impact * 2);
+  golpeBands.children.forEach((b, i) => b.traverse((m) => { if (m.material) m.material.opacity = (i % 2 ? 0.1 : 0.32) + impact * 0.25; }));
+  const enter = easeOutBack(lt / 0.25);
+  golpe.children.forEach((l, i) => {
+    const jolt = impact * (hash(i + past.length * 7) - 0.5) * 0.08;
+    l.position.set(l.userData.x0 * lerp(1.6, 1, enter) + jolt, jolt * 0.6, 0);
+    l.rotation.z = jolt * 1.5;
+    l.material.opacity = smooth(lt / 0.12);
+  });
+  const sc = 1 + impact * 0.12;
+  golpe.scale.setScalar(sc * (frameW(3.6) * 0.86) / golpe.userData.width);
   shock.forEach((m, i) => {
-    const pt = past[past.length - 1 - i];
-    if (pt === undefined) { m.visible = false; return; }
-    const age = t - pt;
-    m.visible = age < 0.35;
-    const hand = Math.round((pt - 0.09) % 2 * 4) / 4;
-    const isCross = hand === 0.5 || hand === 1.5;
-    const h = isCross ? fBox.j.rHand : fBox.j.lHand;
-    h.updateWorldMatrix(true, false);
-    m.position.setFromMatrixPosition(h.matrixWorld);
-    m.lookAt(camera.position);
-    m.scale.setScalar(1 + age * 9);
-    m.material.opacity = (1 - age / 0.35) * 0.9;
-    if (i === 0) boxImpact = Math.max(0, 1 - age / 0.12);
+    const p = past[past.length - 1 - i];
+    if (p === undefined) { m.visible = false; return; }
+    const a = t - p;
+    m.visible = a < 0.45;
+    m.position.set(0, 0, 0.05);
+    m.scale.setScalar(0.6 + a * 6);
+    m.material.opacity = Math.max(0, 1 - a / 0.45) * 0.8;
   });
-  let target;
-  if (variant === 0) {
-    camera.position.set(1.0, 1.45, 2.5 - lt * 0.2);
-    target = V(0, 1.3, 0);
-  } else {
-    camera.position.set(0.5 + lt * 0.2, 0.42, 2.1);
-    target = V(-0.1, 1.2, 0);
-  }
-  camera.position.x += boxImpact * 0.03 * noise1(t * 7);
-  camera.position.y += boxImpact * 0.03 * noise1(t * 9 + 3);
-  camera.lookAt(target);
-  faceCameraBehind(boxBands, V(0, 1.2, 0), 5.5);
-  updateBands(boxBands, t, 1.2);
 }
 
-// ================= BARRE =================
-const gBarre = mkGroup('barre');
-fBarre.setPose(barrePose(0));
-fBarre.plantFeet();
-fBarre.root.updateMatrixWorld(true);
-const handPos = V().setFromMatrixPosition(fBarre.j.lHand.matrixWorld);
-const barY = handPos.y - 0.02, barX = handPos.x + 0.02;
-const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 4, 16), bodyMat);
-bar.rotation.x = Math.PI / 2; bar.position.set(barX, barY, 0); bar.castShadow = true; gBarre.add(bar);
-for (const z of [-1.6, 1.6]) {
-  const post = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, barY, 12), bodyMat);
-  post.position.set(barX + 0.12, barY / 2, z); gBarre.add(post);
-  const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.13, 8), bodyMat);
-  arm.rotation.z = Math.PI / 2; arm.position.set(barX + 0.06, barY, z); gBarre.add(arm);
-}
-const spot = new THREE.SpotLight(0xffffff, 22, 12, 0.45, 0.6, 1.6);
-spot.position.set(0, 6, 0.5); spot.target.position.set(0, 0, 0);
-gBarre.add(spot); gBarre.add(spot.target);
-const barreBands = bandStack('BARRE', 6, 0.9);
-scene.add(barreBands);
-
-function sceneBarre(lt, t, variant) {
-  fBarre.root.visible = true;
-  fBarre.root.position.set(0, 0, 0);
-  fBarre.root.rotation.y = 0;
-  fBarre.setPose(barrePose(t - 13 + 0.6));
-  fBarre.plantFeet();
-  const ang = variant === 0 ? lerp(-1.75, -1.35, lt / 3.5) : lerp(-0.6, -0.9, lt);
-  const r = variant === 0 ? 3.7 : 3.1;
-  camera.position.set(r * Math.sin(ang), variant === 0 ? 1.25 : 0.7, r * Math.cos(ang));
-  camera.lookAt(0, variant === 0 ? 1.0 : 1.1, 0);
-  faceCameraBehind(barreBands, V(0, 1.1, 0), 5.5);
-  updateBands(barreBands, t, 0.6);
+// ---- 4. CADA PASO ----
+const gPaso = mkGroup('paso');
+const trackB = makeTrack(gPaso, 8, 0.5);
+const paso = letterGroup('PASO.', { font: 'RocBlackObl', size: 300, fill: '#f2f2f2' }, 0.7);
+noFog(paso); gPaso.add(paso);
+function scenePaso(lt, t) {
+  trackB(lt * 9);
+  const bob = Math.abs(Math.sin(t * Math.PI * 2)) * 0.03; // un paso por beat
+  camera.position.set(0.02 * Math.sin(t * Math.PI), 0.42 + bob, 2.4);
+  camera.lookAt(0, 0.45, -3);
+  paso.position.set(0, 0.62, -0.6);
+  paso.scale.setScalar((frameW(3.0) * 0.82) / paso.userData.width);
+  paso.children.forEach((l, i) => {
+    const tIn = 0.08 + i * 0.3;   // cada letra "pisa" en su tiempo
+    const k = easeOut((lt - tIn) / 0.18);
+    l.visible = lt >= tIn;
+    l.position.set(l.userData.x0, lerp(0.45, 0, k) + 0.03 * Math.exp(-(((lt - tIn - 0.18) * 14) ** 2)), lerp(-1.2, 0, k));
+    l.material.opacity = k;
+  });
 }
 
-// ================= CONNECT =================
-const gConnect = mkGroup('connect');
-const links = [];
-for (let i = 0; i < 3; i++) {
-  const m = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 1, 8), lineMat);
-  gConnect.add(m); links.push(m);
+// ---- 5. CADA RESPIRACIÓN ----
+const gResp = mkGroup('respira');
+const respira = letterGroup('RESPIRA.', { font: 'RocLightObl', size: 300, fill: '#f2f2f2' }, 0.5);
+noFog(respira); gResp.add(respira);
+const barreLine = new THREE.Mesh(new THREE.PlaneGeometry(1, 0.008), lineMat);
+gResp.add(barreLine);
+const respSub = word(['BARRE · YOGA · PILATES'], { font: 'BioBold', size: 110, tracking: 14 }, 0.95);
+gResp.add(respSub);
+const motes = [];
+for (let i = 0; i < 60; i++) {
+  const m = new THREE.Mesh(new THREE.CircleGeometry(0.004 + hash(i) * 0.006, 8),
+    new THREE.MeshBasicMaterial({ color: WHITE, transparent: true, toneMapped: false, fog: false }));
+  gResp.add(m); motes.push(m);
 }
-const core = new THREE.Mesh(new THREE.SphereGeometry(0.07, 20, 16), lineMat);
-gConnect.add(core);
-const pulses = [];
-for (let i = 0; i < 4; i++) {
-  const m = new THREE.Mesh(new THREE.RingGeometry(0.98, 1.0, 128),
-    new THREE.MeshBasicMaterial({ color: WHITE, transparent: true, toneMapped: false, side: THREE.DoubleSide }));
-  m.rotation.x = -Math.PI / 2; m.position.y = 0.004; gConnect.add(m); pulses.push(m);
+function sceneRespira(lt) {
+  camera.position.set(0, 0, 3.6 - lt * 0.08);
+  camera.lookAt(0, 0, 0);
+  // inhalar (expande) / exhalar (recoge), ciclo de 3.5 s
+  const breath = Math.sin(clamp01(lt / 3.3) * Math.PI);
+  const spread = 1 + 0.35 * breath;
+  respira.scale.setScalar((frameW(3.6) * 0.7) / respira.userData.width);
+  respira.children.forEach((l, i) => {
+    const a = smooth((lt - 0.1 - i * 0.06) / 0.4);
+    l.position.set(l.userData.x0 * spread, 0.12 + 0.03 * breath, 0);
+    l.material.opacity = a;
+  });
+  const lk = easeInOut((lt - 0.4) / 1.4);
+  barreLine.scale.x = Math.max(0.001, 1.25 * lk);
+  barreLine.position.set(-0.625 + 0.625 * lk, -0.12, 0);
+  const sk = easeOut((lt - 1.2) / 0.6);
+  respSub.position.set(0, -0.27 - 0.03 * (1 - sk), 0);
+  respSub.material.opacity = sk * 0.85;
+  motes.forEach((m, i) => {
+    m.position.set((hash(i) - 0.5) * 2.2, ((hash(i + 7) * 3 + lt * (0.04 + hash(i + 3) * 0.05)) % 3) - 1.5, -0.5 - hash(i + 11));
+    m.material.opacity = 0.15 + 0.35 * hash(i + 5);
+  });
 }
-const tmpA = V(), tmpB = V(), tmpC = V();
-function sceneConnect(lt, t) {
-  const R = 1.55;
-  const figs = [[fRun, runPose(t)], [fBox, boxPose(t)], [fBarre, barrePose(t)]];
-  const chests = [];
-  figs.forEach(([f, pose], i) => {
-    f.root.visible = true;
-    const a = Math.PI / 2 + i * (Math.PI * 2 / 3);
-    f.root.position.set(Math.cos(a) * R, 0, Math.sin(a) * R);
-    f.root.rotation.y = -a + Math.PI / 2 + Math.PI;
-    f.setPose(pose);
-    if (f !== fRun) f.plantFeet();
-    chests.push(f.chestWorld(V()));
+
+// ---- 6. NOS CONECTA (muro de disciplinas) ----
+const gConecta = mkGroup('conecta');
+const wall = new THREE.Group(); gConecta.add(wall);
+const WALL = ['RUN', 'BOX', 'BARRE', 'YOGA', 'PILATES'];
+for (let r = 0; r < 13; r++) {
+  const w = WALL[r % WALL.length];
+  const b = wordBand(w, r % 2 ? { fill: '#f2f2f2', size: 200 } : { fill: null, stroke: '#f2f2f2', strokeWidth: 4, size: 200 }, 0.3, 8);
+  b.position.y = (r - 6) * 0.29;
+  b.userData.dir = r % 2 ? 1 : -1;
+  b.userData.speed = 0.25 + 0.1 * (r % 3);
+  b.userData.row = r;
+  noFog(b);
+  wall.add(b);
+}
+const conecta = word(['NOS', 'CONECTA.'], { font: 'RocBlackObl', size: 300, lineHeight: 0.88 }, 1.3);
+gConecta.add(conecta);
+const conectaBg = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, fog: false }));
+gConecta.add(conectaBg);
+function sceneConecta(lt, t) {
+  const k = easeInOut((lt - 1.9) / 1.1);
+  camera.position.set(0, lerp(0, -0.2, k), lerp(3.4, 7.5, k));
+  camera.lookAt(0, 0, 0);
+  wall.rotation.set(lerp(0, -0.5, k), lerp(0, 0.35, k), lerp(0, -0.12, k));
+  updateBands(wall, t, 1 + 2 * k);
+  // las filas se van iluminando hasta que todo el muro brilla: todas las disciplinas, una comunidad
+  wall.children.forEach((b) => {
+    const r = b.userData.row;
+    const on = smooth((lt - 0.15 - Math.abs(r - 6) * 0.07) / 0.2);
+    b.traverse((m) => { if (m.material) m.material.opacity = lerp(0.12, r % 2 ? 0.55 : 0.8, on) * (1 - 0.5 * k); });
   });
-  const grow = easeOut((lt - 0.4) / 0.6);
-  links.forEach((m, i) => {
-    const a = chests[i], b = chests[(i + 1) % 3];
-    tmpA.copy(a); tmpB.lerpVectors(a, b, grow);
-    m.position.lerpVectors(tmpA, tmpB, 0.5);
-    m.scale.set(1, Math.max(0.001, tmpA.distanceTo(tmpB)), 1);
-    m.quaternion.setFromUnitVectors(V(0, 1, 0), tmpC.subVectors(tmpB, tmpA).normalize());
-    m.visible = grow > 0.01;
-  });
-  const cy = chests.reduce((s, c) => s + c.y, 0) / 3;
-  core.position.set(0, cy, 0);
-  core.scale.setScalar((0.6 + 0.6 * Math.exp(-((lt % 0.5) * 8))) * smooth((lt - 0.9) / 0.3) + 0.001);
-  pulses.forEach((m, i) => {
-    const age = ((lt - 0.9) + i * 0.5) % 2;
-    m.visible = lt > 0.9;
-    m.scale.setScalar(0.3 + age * 2.2);
-    m.material.opacity = Math.max(0, 1 - age / 2) * 0.6;
-  });
-  const k = easeInOut(lt / 3);
-  const ang = lerp(0.3, 1.6, k);
-  const r = lerp(7.5, 5.0, k), h = lerp(2.0, 9.5, easeInOut((lt - 1.0) / 2.0));
-  camera.position.set(Math.sin(ang) * r, h, Math.cos(ang) * r);
-  camera.lookAt(0, lerp(1.0, 0.3, k), 0);
+  const c = easeOutBack((lt - 0.5) / 0.4);
+  conecta.visible = lt > 0.5;
+  conecta.position.set(0, 0, 0.3);
+  fitW(conecta, 1.3 * lerp(1.3, 1, c));
+  conecta.material.opacity = smooth((lt - 0.5) / 0.15) * (1 - smooth((lt - 2.3) / 0.4));
+  conectaBg.position.set(0, 0, 0.25);
+  conectaBg.scale.set(1.5, 0.75, 1);
+  conectaBg.material.opacity = 0.75 * conecta.material.opacity;
 }
 
 // ================= GLOBE =================
@@ -407,7 +400,6 @@ const arcs = cityObjs.filter((c) => !c.hub).map((c, i) => {
 const centerLon = -40, centerLat = 18;
 
 function sceneGlobe(lt, t, fade = 1) {
-  floor.visible = false;
   const spin = easeOut(lt / 3.2);
   globe.rotation.y = -centerLon * Math.PI / 180 + lerp(-2.1, 0, spin) + 0.03 * lt;
   globe.rotation.x = centerLat * Math.PI / 180;
@@ -454,8 +446,6 @@ for (let i = 0; i < 16; i++) {
   m.renderOrder = 100 - i;
   logoStack.add(m);
 }
-// Escala un plano de texto a un ancho dado (el formato vertical manda).
-const fitW = (m, w) => { m.scale.setScalar(w / m.geometry.parameters.width); return m; };
 const brandName = fitW(textPlane(['AT THE CLUB'], { font: 'RocBlackObl', size: 220, fill: '#f2f2f2' }, 1), 1.0);
 const tagline = fitW(textPlane(['ONE ECOSYSTEM.', 'ONE COMMUNITY.'], { font: 'RocMedObl', size: 140, fill: '#f2f2f2', lineHeight: 1.0 }, 1), 0.62);
 const discRow = fitW(textPlane(['BARRE · YOGA · BOXING', 'PILATES · SOCIAL RUN'], { font: 'BioBold', size: 90, fill: '#f2f2f2', lineHeight: 1.25, tracking: 4 }, 1), 0.6);
@@ -469,7 +459,6 @@ logoGlobe.position.set(0, 0.35, -2.5); logoGlobe.material.opacity = 0.0; noFog(l
 gLogo.add(logoGlobe);
 
 function sceneLogo(lt) {
-  floor.visible = false;
   const k = easeOutBack(lt / 0.9);
   logoStack.position.set(0, lerp(-0.4, 0.62, easeOut(lt / 0.9)), lerp(-5, 0, easeOut(lt / 0.9)));
   logoStack.rotation.set(lerp(0.9, 0, k) + 0.05 * Math.sin(lt * 1.3), lerp(-1.4, 0, k) + 0.12 * Math.sin(lt * 0.9 + 0.5), 0);
@@ -554,49 +543,38 @@ function updateHud(t, sceneIdx, disc, cityIdx) {
 }
 
 // ---------- secuenciador ----------
-const cuts = [];
-TL.scenes.forEach((s) => cuts.push(s.start));
-for (let i = 0; i < TL.montage.length; i++) cuts.push(3 + i);
-
-function hideAll() {
-  for (const g of Object.values(groups)) g.visible = false;
-  for (const f of [fRun, fBox, fBarre]) f.root.visible = false;
-  for (const b of [runBands, boxBands, barreBands]) b.visible = false;
-  floor.visible = true;
-  camera.rotation.z = 0;
-}
+const cuts = TL.scenes.map((sc) => sc.start);
+// id de escena -> [función, disciplina en el HUD, ciudad en el HUD, estela de movimiento]
+const SCENES = {
+  intro: [(lt) => sceneIntro(lt), 'MOVE', 0, 0],
+  primero: [(lt) => scenePrimero(lt), 'SOCIAL RUN', 2, 0.3],
+  despiertas: [(lt) => sceneDespiertas(lt), 'WELLNESS', 1, 0],
+  golpe: [(lt, t) => sceneGolpe(lt, t), 'BOXING', 1, 0.35],
+  paso: [(lt, t) => scenePaso(lt, t), 'SOCIAL RUN', 3, 0.3],
+  respira: [(lt) => sceneRespira(lt), 'BARRE', 4, 0],
+  conecta: [(lt, t) => sceneConecta(lt, t), 'COMMUNITY', 0, 0.25],
+  globe: [(lt, t) => sceneGlobe(lt, t), 'COMMUNITY', null, 0],
+  logo: [(lt) => sceneLogo(lt), 'ATC', 0, 0],
+};
 
 window.renderFrame = (t) => {
-  hideAll();
-  const si = TL.scenes.findIndex((s) => t >= s.start && t < s.end);
+  for (const g of Object.values(groups)) g.visible = false;
+  camera.rotation.z = 0;
+  impact = 0;
+  const si = TL.scenes.findIndex((sc) => t >= sc.start && t < sc.end);
   const s = TL.scenes[si < 0 ? TL.scenes.length - 1 : si];
   const lt = t - s.start;
-  let damp = 0, disc = 'MOVE', cityIdx = 0;
-  const show = (id) => { groups[id].visible = true; };
-
-  if (s.id === 'intro') { show('intro'); sceneIntro(lt); }
-  else if (s.id === 'montage') {
-    const ci = Math.min(TL.montage.length - 1, Math.floor(lt));
-    const kind = TL.montage[ci];
-    const sub = lt - ci;
-    cityIdx = ci;
-    if (kind === 'run') { show('run'); runBands.visible = true; sceneRun(sub, t, ci === 0 ? 0 : 1); disc = 'SOCIAL RUN'; damp = 0.45; }
-    if (kind === 'box') { show('box'); boxBands.visible = true; sceneBox(sub, t, ci === 1 ? 0 : 1); disc = 'BOXING'; damp = 0.4; }
-    if (kind === 'barre') { show('barre'); barreBands.visible = true; sceneBarre(sub, t, ci === 2 ? 0 : 1); disc = 'BARRE'; damp = 0.35; }
-  }
-  else if (s.id === 'box') { show('box'); boxBands.visible = true; sceneBox(lt, t, 0); disc = 'BOXING'; damp = 0.4; cityIdx = 1; }
-  else if (s.id === 'run') { show('run'); runBands.visible = true; sceneRun(lt, t, 2); disc = 'SOCIAL RUN'; damp = 0.45; cityIdx = 2; }
-  else if (s.id === 'barre') { show('barre'); barreBands.visible = true; sceneBarre(lt, t, 0); disc = 'BARRE'; damp = 0.35; cityIdx = 3; }
-  else if (s.id === 'connect') { show('connect'); sceneConnect(lt, t); disc = 'CONNECTION'; damp = 0.25; cityIdx = 4; }
-  else if (s.id === 'globe') { show('globe'); sceneGlobe(lt, t); disc = 'COMMUNITY'; cityIdx = Math.floor(lt / 1.1); }
-  else if (s.id === 'logo') { show('logo'); sceneLogo(lt); disc = 'ATC'; cityIdx = 0; }
+  const [fn, disc, city, damp] = SCENES[s.id];
+  groups[s.id].visible = true;
+  fn(lt, t);
+  const cityIdx = city ?? Math.floor(lt / 1.1);
 
   // cortes: flash + aberración cromática, y reinicio de estelas
   const lastCut = Math.max(...cuts.filter((c) => c <= t));
   const sinceCut = t - lastCut;
-  const flashK = lastCut > 0 ? Math.max(0, 1 - sinceCut / 0.1) * 0.55 : 0;
+  const flashK = lastCut > 0 ? Math.max(0, 1 - sinceCut / 0.08) * 0.22 : 0;
   finalPass.uniforms.flash.value = flashK + (s.id === 'logo' ? Math.max(0, 1 - Math.abs(lt - 0.9) / 0.08) * 0.5 : 0);
-  finalPass.uniforms.chroma.value = Math.max(0, 1 - sinceCut / 0.3) + boxImpact * 0.5 * (s.id === 'box' || s.id === 'montage' ? 1 : 0);
+  finalPass.uniforms.chroma.value = 0.6 * Math.max(0, 1 - sinceCut / 0.25) + impact * 0.6;
   finalPass.uniforms.time.value = t;
   finalPass.uniforms.fade.value = Math.min(smooth(t / 0.25), 1 - smooth((t - 29.5) / 0.5));
   after.uniforms.damp.value = sinceCut < 1 / 30 ? 0 : damp;
