@@ -133,7 +133,7 @@ function makeTrack(g, lanes = 6, spacing = 0.55) {
     l.rotation.x = -Math.PI / 2; l.position.set(x, 0, -95); g.add(l);
   }
   for (let i = 0; i < 30; i++) {
-    const m = new THREE.Mesh(new THREE.PlaneGeometry(lanes * spacing, 0.012), lineMat);
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(lanes * spacing, 0.06), lineMat);
     m.rotation.x = -Math.PI / 2; g.add(m); marks.push(m);
   }
   return (travel) => marks.forEach((m, i) => { m.position.set(0, 0.001, ((i * 2.2 + travel) % 66) - 60); });
