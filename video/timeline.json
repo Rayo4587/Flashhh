@@ -1,0 +1,46 @@
+{
+  "fps": 30,
+  "duration": 30,
+  "width": 1080,
+  "height": 1920,
+  "bpm": 120,
+  "scenes": [
+    { "id": "intro",   "start": 0,    "end": 3 },
+    { "id": "montage", "start": 3,    "end": 9 },
+    { "id": "box",     "start": 9,    "end": 11 },
+    { "id": "run",     "start": 11,   "end": 13 },
+    { "id": "barre",   "start": 13,   "end": 16.5 },
+    { "id": "connect", "start": 16.5, "end": 19.5 },
+    { "id": "globe",   "start": 19.5, "end": 25 },
+    { "id": "logo",    "start": 25,   "end": 30 }
+  ],
+  "montage": ["run", "box", "barre", "run", "box", "barre"],
+  "vo": [
+    { "line": 0, "at": 1.3 },
+    { "line": 1, "at": 3.5 },
+    { "line": 2, "at": 5.3 },
+    { "line": 3, "at": 9.25 },
+    { "line": 4, "at": 11.25 },
+    { "line": 5, "at": 13.35 },
+    { "line": 6, "at": 17.0 },
+    { "line": 7, "at": 20.3 },
+    { "line": 8, "at": 25.9 }
+  ],
+  "captions": [
+    { "text": "MUÉVETE.",                             "at": 1.3,   "end": 2.9 },
+    { "text": "NO POR LLEGAR PRIMERO...",              "at": 3.5,   "end": 5.2 },
+    { "text": "SINO POR TODO LO QUE DESPIERTAS EN EL CAMINO.", "at": 5.3, "end": 8.6 },
+    { "text": "CADA GOLPE.",                           "at": 9.25,  "end": 10.9 },
+    { "text": "CADA PASO.",                            "at": 11.25, "end": 12.9 },
+    { "text": "CADA RESPIRACIÓN.",                     "at": 13.35, "end": 16.3 },
+    { "text": "NOS CONECTA.",                          "at": 17.0,  "end": 19.3 },
+    { "text": "CINCO CIUDADES. UNA SOLA COMUNIDAD.",   "at": 20.3,  "end": 24.6 }
+  ],
+  "cities": [
+    { "name": "MEDELLÍN",     "lat": 6.25,  "lon": -75.57, "hub": true },
+    { "name": "BOGOTÁ",       "lat": 4.71,  "lon": -74.07 },
+    { "name": "CALI",         "lat": 3.45,  "lon": -76.53 },
+    { "name": "BARRANQUILLA", "lat": 10.96, "lon": -74.80 },
+    { "name": "VALENCIA",     "lat": 39.47, "lon": -0.38 }
+  ]
+}

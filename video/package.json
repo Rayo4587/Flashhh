@@ -1,0 +1,14 @@
+{
+  "name": "atc-brand-video",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "render": "node render.js"
+  },
+  "dependencies": {
+    "kokoro-fp32a-shards": "1.0.0",
+    "kokoro-fp32b-shards": "1.0.0",
+    "kokoro-fp32c-shards": "1.0.0",
+    "three": "0.160.0"
+  }
+}
