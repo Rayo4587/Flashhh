@@ -1,0 +1,4 @@
+Plantillas HTML del carrusel "Conoce a las creadoras".
+
+Para cambiar una foto: reemplaza el archivo en img/ (o geral.jpg) con el mismo nombre, o cambia la ruta en el sNN.html.
+Para renderizar: en esta carpeta, npm i @fontsource/playfair-display @fontsource/inter playwright y luego node render.js 2 <carpeta-de-salida>.
